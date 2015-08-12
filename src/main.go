@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"golang.org/x/sys/windows/registry"
+
 	"github.com/elazarl/goproxy"
 )
 
@@ -18,7 +20,21 @@ func isBaidu() goproxy.ReqConditionFunc {
 	}
 }
 
+func updateSystemProxySetting() {
+	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Internet Settings`, registry.ALL_ACCESS)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer k.Close()
+
+	k.SetStringValue("ProxyServer", "127.0.0.1:720")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
+	updateSystemProxySetting()
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = false
 	proxy.OnRequest(isBaidu()).DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
@@ -29,5 +45,5 @@ func main() {
 		}
 		return r, res
 	})
-	log.Fatal(http.ListenAndServe(":8081", proxy))
+	log.Fatal(http.ListenAndServe(":720", proxy))
 }
